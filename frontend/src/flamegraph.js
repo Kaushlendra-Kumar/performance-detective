@@ -97,10 +97,19 @@ export class FlameGraph {
     canvas.tabIndex = 0;
     canvas.setAttribute('role', 'application');
     canvas.setAttribute('aria-label', 'Flame graph. Arrow keys move between frames, Enter zooms, Escape resets zoom.');
-    canvas.addEventListener('mousemove', (e) => this._hover(e));
-    canvas.addEventListener('mouseleave', () => { this.hovered = null; this.onHover(null); this.draw(); });
+    // Pointer events, not mouse events: a tap also fires compatibility mousemove/mouseleave,
+    // which would pre-select the frame and then hide its tooltip.
+    canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') this._hover(e); });
+    canvas.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse') { this.hovered = null; this.onHover(null); this.draw(); }
+    });
+    canvas.addEventListener('blur', () => { if (this.hovered) { this.hovered = null; this.onHover(null); this.draw(); } });
+    // Touch has no hover: the first tap on a frame shows its details, a second tap zooms.
+    let pointerType = 'mouse';
+    canvas.addEventListener('pointerdown', (e) => { pointerType = e.pointerType; });
     canvas.addEventListener('click', (e) => {
       const r = this._hit(e);
+      if (pointerType !== 'mouse' && (r ? r.node : null) !== this.hovered) { this._hover(e); return; }
       if (r) { this.focused = r.node; this.setZoom(r.node); this.onSelect(r.node); }
     });
     canvas.addEventListener('keydown', (e) => this._key(e));

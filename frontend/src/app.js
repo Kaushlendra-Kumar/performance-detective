@@ -425,8 +425,8 @@ async function tabFlame(body, ctx, params) {
         <div>self: ${count(node.self)} samples · ${pct(node.self / total)}</div>
         <div class="muted">of zoom root: ${pct(node.value / (fg.zoom.value || 1))}</div>`;
       if (e) {
-        const x = Math.min(e.clientX + 14, window.innerWidth - 340);
-        const y = e.clientY + 16 + 150 > window.innerHeight ? e.clientY - 150 : e.clientY + 16;
+        const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 4);
+        const y = e.clientY + 16 + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 8 : e.clientY + 16;
         tip.style.left = Math.max(4, x) + 'px';
         tip.style.top = Math.max(4, y) + 'px';
       }

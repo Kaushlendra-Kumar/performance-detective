@@ -184,3 +184,40 @@ pre.out { background: #0a0c0f; border: 1px solid var(--line); border-radius: 6px
 /* Findings inside the narrow function panel stack vertically. */
 .panel .finding .three { grid-template-columns: 1fr; }
 .panel .rec-grid { grid-template-columns: 1fr; }
+
+/* Phones: tighter gutters, scrollable tables and nav, stacked rows. */
+.tooltip { max-width: calc(100vw - 8px); }
+@media (max-width: 640px) {
+  body { -webkit-text-size-adjust: 100%; }
+  .top { flex-wrap: wrap; gap: 6px 16px; padding: 8px 16px; }
+  .top nav { overflow-x: auto; max-width: 100%; margin: 0 -10px; }
+  .top nav a { white-space: nowrap; }
+  .demo-banner { padding: 8px 16px; font-size: 13px; }
+  main { padding: 14px 16px 40px; }
+  h1 { font-size: 19px; }
+  .page-head .actions { width: 100%; }
+  .card { padding: 12px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stat .value { font-size: 19px; overflow-wrap: anywhere; }
+  .tbl { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Functions: keep Self, Inclusive and the name; the rest is in the function panel. */
+  .fn-table { display: table; }
+  .fn-table th:nth-child(n+3):not(:nth-child(5)), .fn-table td:nth-child(n+3):not(:nth-child(5)) { display: none; }
+  .fn-table td.mono { max-width: none; word-break: break-all; }
+  .fn-table .minibar { display: none; }
+  .meta dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .flame-controls select, .flame-controls input { width: 100%; max-width: 100%; }
+  .bar-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 64px; }
+  .dv-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 10px; padding-bottom: 6px; border-bottom: 1px solid #1c2026; }
+  .dv-name, .dv-track { grid-column: 1 / -1; }
+  .rec-grid { grid-template-columns: 1fr; }
+  .rec-grid dd { margin-bottom: 6px; }
+  .flame-controls { gap: 10px; }
+  .flame-controls label { flex: 1 1 140px; }
+  .flame-wrap { padding: 4px; }
+  .tooltip { width: 280px; }
+  .panel { padding: 14px 16px; }
+  .small-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form .row label { min-width: 100%; }
+  input, select, textarea { font-size: 16px; } /* stops iOS zooming into focused fields */
+}
