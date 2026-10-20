@@ -41,8 +41,27 @@ async function liveServerReachable() {
   return liveServer;
 }
 
+let firstRoute = true;
+
+function renderNoServer() {
+  view.innerHTML = `
+    <section class="page-head"><div><h1>No profiler attached</h1>
+      <p class="sub">This is the hosted demo of Performance Detective. Profiling real programs needs the local server.</p></div></section>
+    <section class="card">
+      <p>Dashboard, new sessions and run comparison talk to the <span class="mono">detective</span> server, which launches
+        and samples programs with Linux <span class="mono">perf_event_open</span>. It runs on your own Linux machine (or WSL) and is
+        never exposed to the internet, so this hosted copy only carries the synthetic demo session.</p>
+      <pre class="out">cmake --preset default && cmake --build build -j
+./build/detective serve --port 7878     # then open http://127.0.0.1:7878</pre>
+      <div class="actions"><a class="btn primary" href="#/demo">Open the demo session</a>
+        <a class="btn" href="https://github.com/Kaushlendra-Kumar/performance-detective#readme" target="_blank" rel="noopener">Source and setup on GitHub</a></div>
+    </section>`;
+}
+
 async function route() {
   runCleanup();
+  const initial = firstRoute;
+  firstRoute = false;
   const hash = location.hash || '#/';
   const [path, query] = hash.slice(1).split('?');
   const params = new URLSearchParams(query || '');
@@ -61,8 +80,11 @@ async function route() {
     }
     api = liveApi;
     setDemoBanner(false);
-    // Hosted as a static site (no profiler server behind it): fall back to the labelled demo.
-    if (!LOOPBACK.has(location.hostname) && !(await liveServerReachable())) return location.replace('#/demo');
+    // Hosted as a static site (no profiler server behind it): open on the labelled demo, and
+    // explain the server-only pages instead of bouncing every click back to the demo.
+    if (!LOOPBACK.has(location.hostname) && !(await liveServerReachable())) {
+      return initial ? location.replace('#/demo') : renderNoServer();
+    }
     if (!parts.length) return renderDashboard();
     if (parts[0] === 'new') return renderNew(params);
     if (parts[0] === 's' && parts[1]) return renderSession(parts[1], params);
