@@ -1,0 +1,3329 @@
+{
+ "config": {
+  "args": [
+   "--input",
+   "tiles/"
+  ],
+  "benchmark_runs": 0,
+  "env": {},
+  "executable": "/demo/demo_pipeline",
+  "frequency_hz": 999,
+  "label": "DEMO — synthetic data",
+  "mode": "sampling",
+  "timeout_ms": 120000,
+  "track_allocations": false,
+  "warmup_runs": 0,
+  "working_dir": ""
+ },
+ "created_ms": 1700000000000,
+ "demo": true,
+ "id": "demo-session",
+ "imported": false,
+ "message": "synthetic demo data",
+ "pid": -1,
+ "result": {
+  "findings": [
+   {
+    "affected_functions": [
+     "a424e4ff597eeb95"
+    ],
+    "affected_names": [
+     "convolve_row"
+    ],
+    "confidence": "high",
+    "facts": [
+     "5820 of 8760 samples (66.4% ± 1.0%) were taken while executing `convolve_row` itself (self cost).",
+     "Inclusive share (function on stack): 66.4%.",
+     "Estimated self CPU time ≈ 5.83 s (samples × 1 ms period).",
+     "Defined at demo/pipeline.cpp:163.",
+     "Observed callers: gaussian_blur, sharpen, worker_loop."
+    ],
+    "id": "cpu_hotspot:a424e4ff597eeb95",
+    "impact": 0.6643835616438356,
+    "interpretation": "The instructions of this function itself account for a large share of on-CPU time. This usually indicates a hot loop, repeated work, or an algorithm whose cost grows faster than the input.",
+    "kind": "cpu_hotspot",
+    "limitations": [
+     "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+     "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+     "Inlined functions are attributed to the function they were inlined into."
+    ],
+    "measurements": [
+     {
+      "name": "self_samples",
+      "unit": "samples",
+      "value": 5820.0
+     },
+     {
+      "name": "self_share",
+      "unit": "fraction",
+      "value": 0.6643835616438356
+     },
+     {
+      "name": "inclusive_share",
+      "unit": "fraction",
+      "value": 0.6643835616438356
+     },
+     {
+      "name": "self_cpu_estimate",
+      "unit": "s",
+      "value": 5.82582582
+     }
+    ],
+    "next_actions": [
+     "Inspect the source of `convolve_row` (demo/pipeline.cpp:163) for loops and repeated work.",
+     "Check how many times it is called and with what input sizes (instrumentation mode can count calls).",
+     "Re-profile after a change and compare sessions to confirm the share drops."
+    ],
+    "recommendations": [
+     {
+      "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+      "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+      "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+      "observed": "5820 of 8760 samples (66.4% ± 1.0%) were taken while executing `convolve_row` itself (self cost).",
+      "title": "Reduce algorithmic work in the hot function",
+      "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+      "why_it_matters": "When one function's own instructions dominate, the cost usually scales with input size inside a loop. An O(n²) pattern (e.g. a linear search inside a loop) becomes dominant quickly as n grows.",
+      "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+     }
+    ],
+    "remediation": "Reduce the work done per call or the number of calls; see recommendations.",
+    "score": 66.438,
+    "severity": "high",
+    "source": "sampling",
+    "title": "CPU hotspot: convolve_row"
+   },
+   {
+    "affected_functions": [
+     "4b1896d6dd6454c9",
+     "1a3c9890daa6c14e",
+     "b74ff0bddac5485f",
+     "11b7a4358b90071a",
+     "6be7eb241d558c7a",
+     "2494cf2038b81917"
+    ],
+    "affected_names": [
+     "_start",
+     "__libc_start_call_main",
+     "main",
+     "ImagePipeline::run",
+     "apply_filters",
+     "gaussian_blur"
+    ],
+    "confidence": "high",
+    "facts": [
+     "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+     "Below this point no single child holds ≥50.0% of samples."
+    ],
+    "id": "hot_path:2494cf2038b81917",
+    "impact": 0.5365296803652968,
+    "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+    "kind": "hot_path",
+    "limitations": [
+     "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+     "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+     "Inlined functions are attributed to the function they were inlined into."
+    ],
+    "measurements": [
+     {
+      "name": "path_share",
+      "unit": "fraction",
+      "value": 0.5365296803652968
+     },
+     {
+      "name": "path_depth",
+      "unit": "frames",
+      "value": 6.0
+     }
+    ],
+    "next_actions": [
+     "Focus investigation on the last frames of this path.",
+     "Use the flame graph: click the path to zoom in and see how its cost splits."
+    ],
+    "recommendations": [
+     {
+      "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+      "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+      "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+      "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+      "title": "Concentrate optimization effort on the dominant path",
+      "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+      "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+      "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+     }
+    ],
+    "remediation": "",
+    "score": 53.653,
+    "severity": "high",
+    "source": "sampling",
+    "title": "Dominant call path ends in gaussian_blur"
+   },
+   {
+    "affected_functions": [],
+    "affected_names": [],
+    "confidence": "medium",
+    "facts": [
+     "CPU time 8.8 s over 7.9 s wall = 1.1 cores busy on average.",
+     "2 thread(s) were observed on-CPU; the machine has 2 CPU(s), so up to 2 cores could be busy.",
+     "0 voluntary context switches (0/s), 0 involuntary."
+    ],
+    "id": "off_cpu:process",
+    "impact": 0.44303797468354444,
+    "interpretation": "Threads are frequently blocked rather than computing: lock contention, waiting on each other (join/condition variables) or I/O. A high voluntary context-switch rate is consistent with blocking on a contended mutex or futex.",
+    "kind": "off_cpu",
+    "limitations": [
+     "Derived from whole-process getrusage totals; it does not say *where* threads wait.",
+     "On a busy machine, involuntary preemption also lowers utilization."
+    ],
+    "measurements": [
+     {
+      "name": "wall_seconds",
+      "unit": "s",
+      "value": 7.9
+     },
+     {
+      "name": "cpu_seconds",
+      "unit": "s",
+      "value": 8.799999999999999
+     },
+     {
+      "name": "avg_cores_busy",
+      "unit": "cores",
+      "value": 1.1139240506329111
+     },
+     {
+      "name": "voluntary_ctx_switches_per_s",
+      "unit": "1/s",
+      "value": 0.0
+     }
+    ],
+    "next_actions": [
+     "Check whether work inside locked regions can be moved outside the lock.",
+     "Look for sync_cpu findings and pthread/futex frames in the flame graph.",
+     "Use an off-CPU tool (e.g. `perf sched`, `offcputime` from bcc) to see where threads block."
+    ],
+    "recommendations": [
+     {
+      "change_to_investigate": "Move computation outside the critical section, shard data per thread and merge at the end, use atomics for simple counters, or reduce how often threads must coordinate.",
+      "expected_benefit": "Can be large on multi-core machines when threads currently serialize.",
+      "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Check that average cores busy (CPU time / wall time) increases.",
+      "observed": "CPU time 8.8 s over 7.9 s wall = 1.1 cores busy on average.",
+      "title": "Reduce lock scope and contention",
+      "tradeoffs": "Finer-grained locking increases the risk of races and deadlocks; validate with ThreadSanitizer.",
+      "why_it_matters": "Contended locks serialize threads; time blocked on a lock does not even show up as CPU samples.",
+      "would_disprove": "If CPU utilization is already close to the thread count, contention is not the limiting factor."
+     }
+    ],
+    "remediation": "",
+    "score": 31.013,
+    "severity": "medium",
+    "source": "process",
+    "title": "Threads spend much of their time waiting (off-CPU)"
+   }
+  ],
+  "process": {
+   "cancelled": false,
+   "end_unix_ms": 0,
+   "exit_code": 0,
+   "exited_normally": true,
+   "involuntary_ctx_switches": 0,
+   "max_rss_kb": 182000,
+   "pid": 0,
+   "start_error": "",
+   "start_unix_ms": 0,
+   "started": true,
+   "stderr": "",
+   "stderr_truncated": false,
+   "stdout": "DEMO DATA — synthetic, not a real measurement\n",
+   "stdout_truncated": false,
+   "sys_cpu_seconds": 0.2,
+   "term_signal": 0,
+   "timed_out": false,
+   "user_cpu_seconds": 8.6,
+   "voluntary_ctx_switches": 0,
+   "wall_seconds": 7.9
+  },
+  "profile": {
+   "functions": [
+    {
+     "id": "4b1896d6dd6454c9",
+     "module": "demo_pipeline",
+     "name": "_start",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 10
+    },
+    {
+     "id": "1a3c9890daa6c14e",
+     "module": "libc.so.6",
+     "name": "__libc_start_call_main",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    },
+    {
+     "id": "b74ff0bddac5485f",
+     "module": "demo_pipeline",
+     "name": "main",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 44
+    },
+    {
+     "id": "11b7a4358b90071a",
+     "module": "demo_pipeline",
+     "name": "ImagePipeline::run",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 61
+    },
+    {
+     "id": "1320e49e72c69fc4",
+     "module": "demo_pipeline",
+     "name": "load_tiles",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 78
+    },
+    {
+     "id": "97f88aec7eb4d4c4",
+     "module": "demo_pipeline",
+     "name": "decode_png",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 95
+    },
+    {
+     "id": "03dcc001f89fc317",
+     "module": "demo_pipeline",
+     "name": "inflate_block",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 112
+    },
+    {
+     "id": "6be7eb241d558c7a",
+     "module": "demo_pipeline",
+     "name": "apply_filters",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 129
+    },
+    {
+     "id": "2494cf2038b81917",
+     "module": "demo_pipeline",
+     "name": "gaussian_blur",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 146
+    },
+    {
+     "id": "a424e4ff597eeb95",
+     "module": "demo_pipeline",
+     "name": "convolve_row",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 163
+    },
+    {
+     "id": "7a95febdadd35b0d",
+     "module": "demo_pipeline",
+     "name": "sharpen",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 180
+    },
+    {
+     "id": "3cb380461962ecef",
+     "module": "demo_pipeline",
+     "name": "encode_jpeg",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 197
+    },
+    {
+     "id": "08efe270b0b67a06",
+     "module": "demo_pipeline",
+     "name": "dct_8x8",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 214
+    },
+    {
+     "id": "373d8afa80c0c38a",
+     "module": "demo_pipeline",
+     "name": "huffman_encode",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 231
+    },
+    {
+     "id": "21433d56a2c75abb",
+     "module": "demo_pipeline",
+     "name": "write_output",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 248
+    },
+    {
+     "id": "76dc10aab5c542bc",
+     "module": "libc.so.6",
+     "name": "malloc",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    },
+    {
+     "id": "54bd7751df5581fe",
+     "module": "libc.so.6",
+     "name": "free",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    },
+    {
+     "id": "11096c9b61b18231",
+     "module": "libc.so.6",
+     "name": "memcpy",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    },
+    {
+     "id": "62f13c6218fe8e5f",
+     "module": "demo_pipeline",
+     "name": "std::vector<float>::_M_realloc_insert",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 316
+    },
+    {
+     "id": "957696d2fc3afb7d",
+     "module": "libc.so.6",
+     "name": "start_thread",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    },
+    {
+     "id": "70e9ecea0738d9eb",
+     "module": "demo_pipeline",
+     "name": "worker_loop",
+     "resolved": true,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 350
+    },
+    {
+     "id": "61a5f078ab330c66",
+     "module": "libc.so.6",
+     "name": "pthread_mutex_lock",
+     "resolved": true,
+     "source_file": "",
+     "source_line": 0
+    }
+   ],
+   "period_ns": 1001001,
+   "stacks": [
+    [
+     1000,
+     4100,
+     [
+      0,
+      1,
+      2,
+      3,
+      7,
+      8,
+      9
+     ]
+    ],
+    [
+     1000,
+     600,
+     [
+      0,
+      1,
+      2,
+      3,
+      7,
+      8
+     ]
+    ],
+    [
+     1000,
+     900,
+     [
+      0,
+      1,
+      2,
+      3,
+      7,
+      10,
+      9
+     ]
+    ],
+    [
+     1000,
+     700,
+     [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
+    ],
+    [
+     1000,
+     350,
+     [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      18,
+      15
+     ]
+    ],
+    [
+     1000,
+     200,
+     [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      18,
+      17
+     ]
+    ],
+    [
+     1000,
+     480,
+     [
+      0,
+      1,
+      2,
+      3,
+      11,
+      12
+     ]
+    ],
+    [
+     1000,
+     260,
+     [
+      0,
+      1,
+      2,
+      3,
+      11,
+      13
+     ]
+    ],
+    [
+     1000,
+     90,
+     [
+      0,
+      1,
+      2,
+      3,
+      14
+     ]
+    ],
+    [
+     1000,
+     120,
+     [
+      0,
+      1,
+      2,
+      3,
+      7,
+      16
+     ]
+    ],
+    [
+     1001,
+     820,
+     [
+      19,
+      20,
+      9
+     ]
+    ],
+    [
+     1001,
+     140,
+     [
+      19,
+      20,
+      21
+     ]
+    ]
+   ],
+   "thread_names": {
+    "1000": "demo_pipeline",
+    "1001": "demo-worker"
+   }
+  },
+  "summary": {
+   "avg_cores_busy": 1.1139240506329111,
+   "collection": {
+    "allocation_error": "",
+    "analysis_seconds": 0.0,
+    "event": "synthetic (demo)",
+    "frequency_hz": 999,
+    "instrumentation_error": "",
+    "lost_records": 0,
+    "modules": [],
+    "period_ns": 1001001,
+    "raw_samples": 0,
+    "sampling_collected": true,
+    "sampling_error": "",
+    "sampling_requested": true,
+    "warnings": [
+     "DEMO: this session is synthetic sample data generated by `detective demo-data`."
+    ]
+   },
+   "cpu_seconds": 8.799999999999999,
+   "exit_code": 0,
+   "findings": 3,
+   "max_rss_kb": 182000,
+   "sampling": {
+    "complete_stack_fraction": 1.0,
+    "distinct_stacks": 12,
+    "estimated_cpu_seconds": 8.76876876,
+    "functions": 22,
+    "max_stack_depth": 8,
+    "note": "Sample shares estimate on-CPU time; they do not include time spent blocked.",
+    "threads": 2,
+    "total_samples": 8760,
+    "unresolved_frame_fraction": 0.0
+   },
+   "top_functions": [
+    {
+     "id": "a424e4ff597eeb95",
+     "module": "demo_pipeline",
+     "name": "convolve_row",
+     "self_share": 0.6643835616438356,
+     "total_share": 0.6643835616438356
+    },
+    {
+     "id": "03dcc001f89fc317",
+     "module": "demo_pipeline",
+     "name": "inflate_block",
+     "self_share": 0.07990867579908675,
+     "total_share": 0.07990867579908675
+    },
+    {
+     "id": "2494cf2038b81917",
+     "module": "demo_pipeline",
+     "name": "gaussian_blur",
+     "self_share": 0.0684931506849315,
+     "total_share": 0.5365296803652968
+    },
+    {
+     "id": "08efe270b0b67a06",
+     "module": "demo_pipeline",
+     "name": "dct_8x8",
+     "self_share": 0.0547945205479452,
+     "total_share": 0.0547945205479452
+    },
+    {
+     "id": "76dc10aab5c542bc",
+     "module": "libc.so.6",
+     "name": "malloc",
+     "self_share": 0.03995433789954338,
+     "total_share": 0.03995433789954338
+    }
+   ],
+   "wall_seconds": 7.9
+  }
+ },
+ "state": "COMPLETED",
+ "views": {
+  "flamegraph": {
+   "inverted": false,
+   "min_fraction": 0.0001,
+   "nodes": 25,
+   "pruned": 0,
+   "root": {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "54bd7751df5581fe",
+                "module": "libc.so.6",
+                "name": "free",
+                "self": 120,
+                "value": 120
+               },
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "a424e4ff597eeb95",
+                  "module": "demo_pipeline",
+                  "name": "convolve_row",
+                  "self": 4100,
+                  "value": 4100
+                 }
+                ],
+                "id": "2494cf2038b81917",
+                "module": "demo_pipeline",
+                "name": "gaussian_blur",
+                "self": 600,
+                "value": 4700
+               },
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "a424e4ff597eeb95",
+                  "module": "demo_pipeline",
+                  "name": "convolve_row",
+                  "self": 900,
+                  "value": 900
+                 }
+                ],
+                "id": "7a95febdadd35b0d",
+                "module": "demo_pipeline",
+                "name": "sharpen",
+                "self": 0,
+                "value": 900
+               }
+              ],
+              "id": "6be7eb241d558c7a",
+              "module": "demo_pipeline",
+              "name": "apply_filters",
+              "self": 0,
+              "value": 5720
+             },
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "08efe270b0b67a06",
+                "module": "demo_pipeline",
+                "name": "dct_8x8",
+                "self": 480,
+                "value": 480
+               },
+               {
+                "children": [],
+                "id": "373d8afa80c0c38a",
+                "module": "demo_pipeline",
+                "name": "huffman_encode",
+                "self": 260,
+                "value": 260
+               }
+              ],
+              "id": "3cb380461962ecef",
+              "module": "demo_pipeline",
+              "name": "encode_jpeg",
+              "self": 0,
+              "value": 740
+             },
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "03dcc001f89fc317",
+                  "module": "demo_pipeline",
+                  "name": "inflate_block",
+                  "self": 700,
+                  "value": 700
+                 },
+                 {
+                  "children": [
+                   {
+                    "children": [],
+                    "id": "76dc10aab5c542bc",
+                    "module": "libc.so.6",
+                    "name": "malloc",
+                    "self": 350,
+                    "value": 350
+                   },
+                   {
+                    "children": [],
+                    "id": "11096c9b61b18231",
+                    "module": "libc.so.6",
+                    "name": "memcpy",
+                    "self": 200,
+                    "value": 200
+                   }
+                  ],
+                  "id": "62f13c6218fe8e5f",
+                  "module": "demo_pipeline",
+                  "name": "std::vector<float>::_M_realloc_insert",
+                  "self": 0,
+                  "value": 550
+                 }
+                ],
+                "id": "97f88aec7eb4d4c4",
+                "module": "demo_pipeline",
+                "name": "decode_png",
+                "self": 0,
+                "value": 1250
+               }
+              ],
+              "id": "1320e49e72c69fc4",
+              "module": "demo_pipeline",
+              "name": "load_tiles",
+              "self": 0,
+              "value": 1250
+             },
+             {
+              "children": [],
+              "id": "21433d56a2c75abb",
+              "module": "demo_pipeline",
+              "name": "write_output",
+              "self": 90,
+              "value": 90
+             }
+            ],
+            "id": "11b7a4358b90071a",
+            "module": "demo_pipeline",
+            "name": "ImagePipeline::run",
+            "self": 0,
+            "value": 7800
+           }
+          ],
+          "id": "b74ff0bddac5485f",
+          "module": "demo_pipeline",
+          "name": "main",
+          "self": 0,
+          "value": 7800
+         }
+        ],
+        "id": "1a3c9890daa6c14e",
+        "module": "libc.so.6",
+        "name": "__libc_start_call_main",
+        "self": 0,
+        "value": 7800
+       }
+      ],
+      "id": "4b1896d6dd6454c9",
+      "module": "demo_pipeline",
+      "name": "_start",
+      "self": 0,
+      "value": 7800
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [],
+          "id": "a424e4ff597eeb95",
+          "module": "demo_pipeline",
+          "name": "convolve_row",
+          "self": 820,
+          "value": 820
+         },
+         {
+          "children": [],
+          "id": "61a5f078ab330c66",
+          "module": "libc.so.6",
+          "name": "pthread_mutex_lock",
+          "self": 140,
+          "value": 140
+         }
+        ],
+        "id": "70e9ecea0738d9eb",
+        "module": "demo_pipeline",
+        "name": "worker_loop",
+        "self": 0,
+        "value": 960
+       }
+      ],
+      "id": "957696d2fc3afb7d",
+      "module": "libc.so.6",
+      "name": "start_thread",
+      "self": 0,
+      "value": 960
+     }
+    ],
+    "id": "",
+    "module": "",
+    "name": "all",
+    "self": 0,
+    "value": 8760
+   },
+   "total": 8760
+  },
+  "flamegraph_inverted": {
+   "inverted": true,
+   "min_fraction": 0.0001,
+   "nodes": 71,
+   "pruned": 0,
+   "root": {
+    "children": [
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "4b1896d6dd6454c9",
+                  "module": "demo_pipeline",
+                  "name": "_start",
+                  "self": 4100,
+                  "value": 4100
+                 }
+                ],
+                "id": "1a3c9890daa6c14e",
+                "module": "libc.so.6",
+                "name": "__libc_start_call_main",
+                "self": 0,
+                "value": 4100
+               }
+              ],
+              "id": "b74ff0bddac5485f",
+              "module": "demo_pipeline",
+              "name": "main",
+              "self": 0,
+              "value": 4100
+             }
+            ],
+            "id": "11b7a4358b90071a",
+            "module": "demo_pipeline",
+            "name": "ImagePipeline::run",
+            "self": 0,
+            "value": 4100
+           }
+          ],
+          "id": "6be7eb241d558c7a",
+          "module": "demo_pipeline",
+          "name": "apply_filters",
+          "self": 0,
+          "value": 4100
+         }
+        ],
+        "id": "2494cf2038b81917",
+        "module": "demo_pipeline",
+        "name": "gaussian_blur",
+        "self": 0,
+        "value": 4100
+       },
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "4b1896d6dd6454c9",
+                  "module": "demo_pipeline",
+                  "name": "_start",
+                  "self": 900,
+                  "value": 900
+                 }
+                ],
+                "id": "1a3c9890daa6c14e",
+                "module": "libc.so.6",
+                "name": "__libc_start_call_main",
+                "self": 0,
+                "value": 900
+               }
+              ],
+              "id": "b74ff0bddac5485f",
+              "module": "demo_pipeline",
+              "name": "main",
+              "self": 0,
+              "value": 900
+             }
+            ],
+            "id": "11b7a4358b90071a",
+            "module": "demo_pipeline",
+            "name": "ImagePipeline::run",
+            "self": 0,
+            "value": 900
+           }
+          ],
+          "id": "6be7eb241d558c7a",
+          "module": "demo_pipeline",
+          "name": "apply_filters",
+          "self": 0,
+          "value": 900
+         }
+        ],
+        "id": "7a95febdadd35b0d",
+        "module": "demo_pipeline",
+        "name": "sharpen",
+        "self": 0,
+        "value": 900
+       },
+       {
+        "children": [
+         {
+          "children": [],
+          "id": "957696d2fc3afb7d",
+          "module": "libc.so.6",
+          "name": "start_thread",
+          "self": 820,
+          "value": 820
+         }
+        ],
+        "id": "70e9ecea0738d9eb",
+        "module": "demo_pipeline",
+        "name": "worker_loop",
+        "self": 0,
+        "value": 820
+       }
+      ],
+      "id": "a424e4ff597eeb95",
+      "module": "demo_pipeline",
+      "name": "convolve_row",
+      "self": 0,
+      "value": 5820
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "4b1896d6dd6454c9",
+                "module": "demo_pipeline",
+                "name": "_start",
+                "self": 480,
+                "value": 480
+               }
+              ],
+              "id": "1a3c9890daa6c14e",
+              "module": "libc.so.6",
+              "name": "__libc_start_call_main",
+              "self": 0,
+              "value": 480
+             }
+            ],
+            "id": "b74ff0bddac5485f",
+            "module": "demo_pipeline",
+            "name": "main",
+            "self": 0,
+            "value": 480
+           }
+          ],
+          "id": "11b7a4358b90071a",
+          "module": "demo_pipeline",
+          "name": "ImagePipeline::run",
+          "self": 0,
+          "value": 480
+         }
+        ],
+        "id": "3cb380461962ecef",
+        "module": "demo_pipeline",
+        "name": "encode_jpeg",
+        "self": 0,
+        "value": 480
+       }
+      ],
+      "id": "08efe270b0b67a06",
+      "module": "demo_pipeline",
+      "name": "dct_8x8",
+      "self": 0,
+      "value": 480
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "4b1896d6dd6454c9",
+                "module": "demo_pipeline",
+                "name": "_start",
+                "self": 120,
+                "value": 120
+               }
+              ],
+              "id": "1a3c9890daa6c14e",
+              "module": "libc.so.6",
+              "name": "__libc_start_call_main",
+              "self": 0,
+              "value": 120
+             }
+            ],
+            "id": "b74ff0bddac5485f",
+            "module": "demo_pipeline",
+            "name": "main",
+            "self": 0,
+            "value": 120
+           }
+          ],
+          "id": "11b7a4358b90071a",
+          "module": "demo_pipeline",
+          "name": "ImagePipeline::run",
+          "self": 0,
+          "value": 120
+         }
+        ],
+        "id": "6be7eb241d558c7a",
+        "module": "demo_pipeline",
+        "name": "apply_filters",
+        "self": 0,
+        "value": 120
+       }
+      ],
+      "id": "54bd7751df5581fe",
+      "module": "libc.so.6",
+      "name": "free",
+      "self": 0,
+      "value": 120
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "4b1896d6dd6454c9",
+                "module": "demo_pipeline",
+                "name": "_start",
+                "self": 600,
+                "value": 600
+               }
+              ],
+              "id": "1a3c9890daa6c14e",
+              "module": "libc.so.6",
+              "name": "__libc_start_call_main",
+              "self": 0,
+              "value": 600
+             }
+            ],
+            "id": "b74ff0bddac5485f",
+            "module": "demo_pipeline",
+            "name": "main",
+            "self": 0,
+            "value": 600
+           }
+          ],
+          "id": "11b7a4358b90071a",
+          "module": "demo_pipeline",
+          "name": "ImagePipeline::run",
+          "self": 0,
+          "value": 600
+         }
+        ],
+        "id": "6be7eb241d558c7a",
+        "module": "demo_pipeline",
+        "name": "apply_filters",
+        "self": 0,
+        "value": 600
+       }
+      ],
+      "id": "2494cf2038b81917",
+      "module": "demo_pipeline",
+      "name": "gaussian_blur",
+      "self": 0,
+      "value": 600
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [],
+                "id": "4b1896d6dd6454c9",
+                "module": "demo_pipeline",
+                "name": "_start",
+                "self": 260,
+                "value": 260
+               }
+              ],
+              "id": "1a3c9890daa6c14e",
+              "module": "libc.so.6",
+              "name": "__libc_start_call_main",
+              "self": 0,
+              "value": 260
+             }
+            ],
+            "id": "b74ff0bddac5485f",
+            "module": "demo_pipeline",
+            "name": "main",
+            "self": 0,
+            "value": 260
+           }
+          ],
+          "id": "11b7a4358b90071a",
+          "module": "demo_pipeline",
+          "name": "ImagePipeline::run",
+          "self": 0,
+          "value": 260
+         }
+        ],
+        "id": "3cb380461962ecef",
+        "module": "demo_pipeline",
+        "name": "encode_jpeg",
+        "self": 0,
+        "value": 260
+       }
+      ],
+      "id": "373d8afa80c0c38a",
+      "module": "demo_pipeline",
+      "name": "huffman_encode",
+      "self": 0,
+      "value": 260
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [],
+                  "id": "4b1896d6dd6454c9",
+                  "module": "demo_pipeline",
+                  "name": "_start",
+                  "self": 700,
+                  "value": 700
+                 }
+                ],
+                "id": "1a3c9890daa6c14e",
+                "module": "libc.so.6",
+                "name": "__libc_start_call_main",
+                "self": 0,
+                "value": 700
+               }
+              ],
+              "id": "b74ff0bddac5485f",
+              "module": "demo_pipeline",
+              "name": "main",
+              "self": 0,
+              "value": 700
+             }
+            ],
+            "id": "11b7a4358b90071a",
+            "module": "demo_pipeline",
+            "name": "ImagePipeline::run",
+            "self": 0,
+            "value": 700
+           }
+          ],
+          "id": "1320e49e72c69fc4",
+          "module": "demo_pipeline",
+          "name": "load_tiles",
+          "self": 0,
+          "value": 700
+         }
+        ],
+        "id": "97f88aec7eb4d4c4",
+        "module": "demo_pipeline",
+        "name": "decode_png",
+        "self": 0,
+        "value": 700
+       }
+      ],
+      "id": "03dcc001f89fc317",
+      "module": "demo_pipeline",
+      "name": "inflate_block",
+      "self": 0,
+      "value": 700
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "children": [],
+                    "id": "4b1896d6dd6454c9",
+                    "module": "demo_pipeline",
+                    "name": "_start",
+                    "self": 350,
+                    "value": 350
+                   }
+                  ],
+                  "id": "1a3c9890daa6c14e",
+                  "module": "libc.so.6",
+                  "name": "__libc_start_call_main",
+                  "self": 0,
+                  "value": 350
+                 }
+                ],
+                "id": "b74ff0bddac5485f",
+                "module": "demo_pipeline",
+                "name": "main",
+                "self": 0,
+                "value": 350
+               }
+              ],
+              "id": "11b7a4358b90071a",
+              "module": "demo_pipeline",
+              "name": "ImagePipeline::run",
+              "self": 0,
+              "value": 350
+             }
+            ],
+            "id": "1320e49e72c69fc4",
+            "module": "demo_pipeline",
+            "name": "load_tiles",
+            "self": 0,
+            "value": 350
+           }
+          ],
+          "id": "97f88aec7eb4d4c4",
+          "module": "demo_pipeline",
+          "name": "decode_png",
+          "self": 0,
+          "value": 350
+         }
+        ],
+        "id": "62f13c6218fe8e5f",
+        "module": "demo_pipeline",
+        "name": "std::vector<float>::_M_realloc_insert",
+        "self": 0,
+        "value": 350
+       }
+      ],
+      "id": "76dc10aab5c542bc",
+      "module": "libc.so.6",
+      "name": "malloc",
+      "self": 0,
+      "value": 350
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [
+               {
+                "children": [
+                 {
+                  "children": [
+                   {
+                    "children": [],
+                    "id": "4b1896d6dd6454c9",
+                    "module": "demo_pipeline",
+                    "name": "_start",
+                    "self": 200,
+                    "value": 200
+                   }
+                  ],
+                  "id": "1a3c9890daa6c14e",
+                  "module": "libc.so.6",
+                  "name": "__libc_start_call_main",
+                  "self": 0,
+                  "value": 200
+                 }
+                ],
+                "id": "b74ff0bddac5485f",
+                "module": "demo_pipeline",
+                "name": "main",
+                "self": 0,
+                "value": 200
+               }
+              ],
+              "id": "11b7a4358b90071a",
+              "module": "demo_pipeline",
+              "name": "ImagePipeline::run",
+              "self": 0,
+              "value": 200
+             }
+            ],
+            "id": "1320e49e72c69fc4",
+            "module": "demo_pipeline",
+            "name": "load_tiles",
+            "self": 0,
+            "value": 200
+           }
+          ],
+          "id": "97f88aec7eb4d4c4",
+          "module": "demo_pipeline",
+          "name": "decode_png",
+          "self": 0,
+          "value": 200
+         }
+        ],
+        "id": "62f13c6218fe8e5f",
+        "module": "demo_pipeline",
+        "name": "std::vector<float>::_M_realloc_insert",
+        "self": 0,
+        "value": 200
+       }
+      ],
+      "id": "11096c9b61b18231",
+      "module": "libc.so.6",
+      "name": "memcpy",
+      "self": 0,
+      "value": 200
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [],
+          "id": "957696d2fc3afb7d",
+          "module": "libc.so.6",
+          "name": "start_thread",
+          "self": 140,
+          "value": 140
+         }
+        ],
+        "id": "70e9ecea0738d9eb",
+        "module": "demo_pipeline",
+        "name": "worker_loop",
+        "self": 0,
+        "value": 140
+       }
+      ],
+      "id": "61a5f078ab330c66",
+      "module": "libc.so.6",
+      "name": "pthread_mutex_lock",
+      "self": 0,
+      "value": 140
+     },
+     {
+      "children": [
+       {
+        "children": [
+         {
+          "children": [
+           {
+            "children": [
+             {
+              "children": [],
+              "id": "4b1896d6dd6454c9",
+              "module": "demo_pipeline",
+              "name": "_start",
+              "self": 90,
+              "value": 90
+             }
+            ],
+            "id": "1a3c9890daa6c14e",
+            "module": "libc.so.6",
+            "name": "__libc_start_call_main",
+            "self": 0,
+            "value": 90
+           }
+          ],
+          "id": "b74ff0bddac5485f",
+          "module": "demo_pipeline",
+          "name": "main",
+          "self": 0,
+          "value": 90
+         }
+        ],
+        "id": "11b7a4358b90071a",
+        "module": "demo_pipeline",
+        "name": "ImagePipeline::run",
+        "self": 0,
+        "value": 90
+       }
+      ],
+      "id": "21433d56a2c75abb",
+      "module": "demo_pipeline",
+      "name": "write_output",
+      "self": 0,
+      "value": 90
+     }
+    ],
+    "id": "",
+    "module": "",
+    "name": "all",
+    "self": 0,
+    "value": 8760
+   },
+   "total": 8760
+  },
+  "function_details": {
+   "03dcc001f89fc317": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "97f88aec7eb4d4c4",
+      "module": "demo_pipeline",
+      "name": "decode_png",
+      "samples": 700,
+      "share": 0.07990867579908675
+     }
+    ],
+    "category": "other",
+    "id": "03dcc001f89fc317",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "inflate_block",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 700,
+    "self_seconds_est": 0.7007007000000001,
+    "self_share": 0.07990867579908675,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 112,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 700,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 700,
+    "total_seconds_est": 0.7007007000000001,
+    "total_share": 0.07990867579908675
+   },
+   "08efe270b0b67a06": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "3cb380461962ecef",
+      "module": "demo_pipeline",
+      "name": "encode_jpeg",
+      "samples": 480,
+      "share": 0.0547945205479452
+     }
+    ],
+    "category": "other",
+    "id": "08efe270b0b67a06",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "dct_8x8",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 480,
+    "self_seconds_est": 0.48048048000000004,
+    "self_share": 0.0547945205479452,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 214,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 480,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 480,
+    "total_seconds_est": 0.48048048000000004,
+    "total_share": 0.0547945205479452
+   },
+   "11096c9b61b18231": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "62f13c6218fe8e5f",
+      "module": "demo_pipeline",
+      "name": "std::vector<float>::_M_realloc_insert",
+      "samples": 200,
+      "share": 0.0228310502283105
+     }
+    ],
+    "category": "memcopy",
+    "id": "11096c9b61b18231",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "memcpy",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 200,
+    "self_seconds_est": 0.20020020000000002,
+    "self_share": 0.0228310502283105,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 200,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 200,
+    "total_seconds_est": 0.20020020000000002,
+    "total_share": 0.0228310502283105
+   },
+   "11b7a4358b90071a": {
+    "callees": [
+     {
+      "id": "6be7eb241d558c7a",
+      "module": "demo_pipeline",
+      "name": "apply_filters",
+      "samples": 5720,
+      "share": 0.6529680365296804
+     },
+     {
+      "id": "1320e49e72c69fc4",
+      "module": "demo_pipeline",
+      "name": "load_tiles",
+      "samples": 1250,
+      "share": 0.14269406392694065
+     },
+     {
+      "id": "3cb380461962ecef",
+      "module": "demo_pipeline",
+      "name": "encode_jpeg",
+      "samples": 740,
+      "share": 0.08447488584474885
+     },
+     {
+      "id": "21433d56a2c75abb",
+      "module": "demo_pipeline",
+      "name": "write_output",
+      "samples": 90,
+      "share": 0.010273972602739725
+     }
+    ],
+    "callers": [
+     {
+      "id": "b74ff0bddac5485f",
+      "module": "demo_pipeline",
+      "name": "main",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "category": "other",
+    "id": "11b7a4358b90071a",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "ImagePipeline::run",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 61,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 7800,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 7800,
+    "total_seconds_est": 7.807807800000001,
+    "total_share": 0.8904109589041096
+   },
+   "1320e49e72c69fc4": {
+    "callees": [
+     {
+      "id": "97f88aec7eb4d4c4",
+      "module": "demo_pipeline",
+      "name": "decode_png",
+      "samples": 1250,
+      "share": 0.14269406392694065
+     }
+    ],
+    "callers": [
+     {
+      "id": "11b7a4358b90071a",
+      "module": "demo_pipeline",
+      "name": "ImagePipeline::run",
+      "samples": 1250,
+      "share": 0.14269406392694065
+     }
+    ],
+    "category": "other",
+    "id": "1320e49e72c69fc4",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "load_tiles",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 78,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 1250,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 1250,
+    "total_seconds_est": 1.2512512500000001,
+    "total_share": 0.14269406392694065
+   },
+   "1a3c9890daa6c14e": {
+    "callees": [
+     {
+      "id": "b74ff0bddac5485f",
+      "module": "demo_pipeline",
+      "name": "main",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "callers": [
+     {
+      "id": "4b1896d6dd6454c9",
+      "module": "demo_pipeline",
+      "name": "_start",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "category": "other",
+    "id": "1a3c9890daa6c14e",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "__libc_start_call_main",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 7800,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 7800,
+    "total_seconds_est": 7.807807800000001,
+    "total_share": 0.8904109589041096
+   },
+   "21433d56a2c75abb": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "11b7a4358b90071a",
+      "module": "demo_pipeline",
+      "name": "ImagePipeline::run",
+      "samples": 90,
+      "share": 0.010273972602739725
+     }
+    ],
+    "category": "other",
+    "id": "21433d56a2c75abb",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "write_output",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 90,
+    "self_seconds_est": 0.09009009000000001,
+    "self_share": 0.010273972602739725,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 248,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 90,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 90,
+    "total_seconds_est": 0.09009009000000001,
+    "total_share": 0.010273972602739725
+   },
+   "2494cf2038b81917": {
+    "callees": [
+     {
+      "id": "a424e4ff597eeb95",
+      "module": "demo_pipeline",
+      "name": "convolve_row",
+      "samples": 4100,
+      "share": 0.4680365296803653
+     }
+    ],
+    "callers": [
+     {
+      "id": "6be7eb241d558c7a",
+      "module": "demo_pipeline",
+      "name": "apply_filters",
+      "samples": 4700,
+      "share": 0.5365296803652968
+     }
+    ],
+    "category": "other",
+    "id": "2494cf2038b81917",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "gaussian_blur",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 600,
+    "self_seconds_est": 0.6006006,
+    "self_share": 0.0684931506849315,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 146,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 4700,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 4700,
+    "total_seconds_est": 4.704704700000001,
+    "total_share": 0.5365296803652968
+   },
+   "373d8afa80c0c38a": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "3cb380461962ecef",
+      "module": "demo_pipeline",
+      "name": "encode_jpeg",
+      "samples": 260,
+      "share": 0.02968036529680365
+     }
+    ],
+    "category": "other",
+    "id": "373d8afa80c0c38a",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "huffman_encode",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 260,
+    "self_seconds_est": 0.26026026,
+    "self_share": 0.02968036529680365,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 231,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 260,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 260,
+    "total_seconds_est": 0.26026026,
+    "total_share": 0.02968036529680365
+   },
+   "3cb380461962ecef": {
+    "callees": [
+     {
+      "id": "08efe270b0b67a06",
+      "module": "demo_pipeline",
+      "name": "dct_8x8",
+      "samples": 480,
+      "share": 0.0547945205479452
+     },
+     {
+      "id": "373d8afa80c0c38a",
+      "module": "demo_pipeline",
+      "name": "huffman_encode",
+      "samples": 260,
+      "share": 0.02968036529680365
+     }
+    ],
+    "callers": [
+     {
+      "id": "11b7a4358b90071a",
+      "module": "demo_pipeline",
+      "name": "ImagePipeline::run",
+      "samples": 740,
+      "share": 0.08447488584474885
+     }
+    ],
+    "category": "other",
+    "id": "3cb380461962ecef",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "encode_jpeg",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 197,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 740,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 740,
+    "total_seconds_est": 0.74074074,
+    "total_share": 0.08447488584474885
+   },
+   "4b1896d6dd6454c9": {
+    "callees": [
+     {
+      "id": "1a3c9890daa6c14e",
+      "module": "libc.so.6",
+      "name": "__libc_start_call_main",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "callers": [],
+    "category": "other",
+    "id": "4b1896d6dd6454c9",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "_start",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 10,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 7800,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 7800,
+    "total_seconds_est": 7.807807800000001,
+    "total_share": 0.8904109589041096
+   },
+   "54bd7751df5581fe": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "6be7eb241d558c7a",
+      "module": "demo_pipeline",
+      "name": "apply_filters",
+      "samples": 120,
+      "share": 0.0136986301369863
+     }
+    ],
+    "category": "allocator",
+    "id": "54bd7751df5581fe",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "free",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 120,
+    "self_seconds_est": 0.12012012000000001,
+    "self_share": 0.0136986301369863,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 120,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 120,
+    "total_seconds_est": 0.12012012000000001,
+    "total_share": 0.0136986301369863
+   },
+   "61a5f078ab330c66": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "70e9ecea0738d9eb",
+      "module": "demo_pipeline",
+      "name": "worker_loop",
+      "samples": 140,
+      "share": 0.01598173515981735
+     }
+    ],
+    "category": "synchronization",
+    "id": "61a5f078ab330c66",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "pthread_mutex_lock",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 140,
+    "self_seconds_est": 0.14014014,
+    "self_share": 0.01598173515981735,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo-worker",
+      "samples": 140,
+      "tid": 1001
+     }
+    ],
+    "total_samples": 140,
+    "total_seconds_est": 0.14014014,
+    "total_share": 0.01598173515981735
+   },
+   "62f13c6218fe8e5f": {
+    "callees": [
+     {
+      "id": "76dc10aab5c542bc",
+      "module": "libc.so.6",
+      "name": "malloc",
+      "samples": 350,
+      "share": 0.03995433789954338
+     },
+     {
+      "id": "11096c9b61b18231",
+      "module": "libc.so.6",
+      "name": "memcpy",
+      "samples": 200,
+      "share": 0.0228310502283105
+     }
+    ],
+    "callers": [
+     {
+      "id": "97f88aec7eb4d4c4",
+      "module": "demo_pipeline",
+      "name": "decode_png",
+      "samples": 550,
+      "share": 0.06278538812785388
+     }
+    ],
+    "category": "other",
+    "id": "62f13c6218fe8e5f",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "std::vector<float>::_M_realloc_insert",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 316,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 550,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 550,
+    "total_seconds_est": 0.5505505500000001,
+    "total_share": 0.06278538812785388
+   },
+   "6be7eb241d558c7a": {
+    "callees": [
+     {
+      "id": "2494cf2038b81917",
+      "module": "demo_pipeline",
+      "name": "gaussian_blur",
+      "samples": 4700,
+      "share": 0.5365296803652968
+     },
+     {
+      "id": "7a95febdadd35b0d",
+      "module": "demo_pipeline",
+      "name": "sharpen",
+      "samples": 900,
+      "share": 0.10273972602739725
+     },
+     {
+      "id": "54bd7751df5581fe",
+      "module": "libc.so.6",
+      "name": "free",
+      "samples": 120,
+      "share": 0.0136986301369863
+     }
+    ],
+    "callers": [
+     {
+      "id": "11b7a4358b90071a",
+      "module": "demo_pipeline",
+      "name": "ImagePipeline::run",
+      "samples": 5720,
+      "share": 0.6529680365296804
+     }
+    ],
+    "category": "other",
+    "id": "6be7eb241d558c7a",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "apply_filters",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 129,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 5720,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 5720,
+    "total_seconds_est": 5.725725720000001,
+    "total_share": 0.6529680365296804
+   },
+   "70e9ecea0738d9eb": {
+    "callees": [
+     {
+      "id": "a424e4ff597eeb95",
+      "module": "demo_pipeline",
+      "name": "convolve_row",
+      "samples": 820,
+      "share": 0.09360730593607305
+     },
+     {
+      "id": "61a5f078ab330c66",
+      "module": "libc.so.6",
+      "name": "pthread_mutex_lock",
+      "samples": 140,
+      "share": 0.01598173515981735
+     }
+    ],
+    "callers": [
+     {
+      "id": "957696d2fc3afb7d",
+      "module": "libc.so.6",
+      "name": "start_thread",
+      "samples": 960,
+      "share": 0.1095890410958904
+     }
+    ],
+    "category": "other",
+    "id": "70e9ecea0738d9eb",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "worker_loop",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 350,
+    "threads": [
+     {
+      "name": "demo-worker",
+      "samples": 960,
+      "tid": 1001
+     }
+    ],
+    "total_samples": 960,
+    "total_seconds_est": 0.9609609600000001,
+    "total_share": 0.1095890410958904
+   },
+   "76dc10aab5c542bc": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "62f13c6218fe8e5f",
+      "module": "demo_pipeline",
+      "name": "std::vector<float>::_M_realloc_insert",
+      "samples": 350,
+      "share": 0.03995433789954338
+     }
+    ],
+    "category": "allocator",
+    "id": "76dc10aab5c542bc",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "malloc",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 350,
+    "self_seconds_est": 0.35035035000000003,
+    "self_share": 0.03995433789954338,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 350,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 350,
+    "total_seconds_est": 0.35035035000000003,
+    "total_share": 0.03995433789954338
+   },
+   "7a95febdadd35b0d": {
+    "callees": [
+     {
+      "id": "a424e4ff597eeb95",
+      "module": "demo_pipeline",
+      "name": "convolve_row",
+      "samples": 900,
+      "share": 0.10273972602739725
+     }
+    ],
+    "callers": [
+     {
+      "id": "6be7eb241d558c7a",
+      "module": "demo_pipeline",
+      "name": "apply_filters",
+      "samples": 900,
+      "share": 0.10273972602739725
+     }
+    ],
+    "category": "other",
+    "id": "7a95febdadd35b0d",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "sharpen",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 180,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 900,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 900,
+    "total_seconds_est": 0.9009009,
+    "total_share": 0.10273972602739725
+   },
+   "957696d2fc3afb7d": {
+    "callees": [
+     {
+      "id": "70e9ecea0738d9eb",
+      "module": "demo_pipeline",
+      "name": "worker_loop",
+      "samples": 960,
+      "share": 0.1095890410958904
+     }
+    ],
+    "callers": [],
+    "category": "other",
+    "id": "957696d2fc3afb7d",
+    "max_recursion_depth": 1,
+    "module": "libc.so.6",
+    "name": "start_thread",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "",
+    "source_line": 0,
+    "threads": [
+     {
+      "name": "demo-worker",
+      "samples": 960,
+      "tid": 1001
+     }
+    ],
+    "total_samples": 960,
+    "total_seconds_est": 0.9609609600000001,
+    "total_share": 0.1095890410958904
+   },
+   "97f88aec7eb4d4c4": {
+    "callees": [
+     {
+      "id": "03dcc001f89fc317",
+      "module": "demo_pipeline",
+      "name": "inflate_block",
+      "samples": 700,
+      "share": 0.07990867579908675
+     },
+     {
+      "id": "62f13c6218fe8e5f",
+      "module": "demo_pipeline",
+      "name": "std::vector<float>::_M_realloc_insert",
+      "samples": 550,
+      "share": 0.06278538812785388
+     }
+    ],
+    "callers": [
+     {
+      "id": "1320e49e72c69fc4",
+      "module": "demo_pipeline",
+      "name": "load_tiles",
+      "samples": 1250,
+      "share": 0.14269406392694065
+     }
+    ],
+    "category": "other",
+    "id": "97f88aec7eb4d4c4",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "decode_png",
+    "related_findings": [],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 95,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 1250,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 1250,
+    "total_seconds_est": 1.2512512500000001,
+    "total_share": 0.14269406392694065
+   },
+   "a424e4ff597eeb95": {
+    "callees": [],
+    "callers": [
+     {
+      "id": "2494cf2038b81917",
+      "module": "demo_pipeline",
+      "name": "gaussian_blur",
+      "samples": 4100,
+      "share": 0.4680365296803653
+     },
+     {
+      "id": "7a95febdadd35b0d",
+      "module": "demo_pipeline",
+      "name": "sharpen",
+      "samples": 900,
+      "share": 0.10273972602739725
+     },
+     {
+      "id": "70e9ecea0738d9eb",
+      "module": "demo_pipeline",
+      "name": "worker_loop",
+      "samples": 820,
+      "share": 0.09360730593607305
+     }
+    ],
+    "category": "other",
+    "id": "a424e4ff597eeb95",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "convolve_row",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "a424e4ff597eeb95"
+      ],
+      "affected_names": [
+       "convolve_row"
+      ],
+      "confidence": "high",
+      "facts": [
+       "5820 of 8760 samples (66.4% ± 1.0%) were taken while executing `convolve_row` itself (self cost).",
+       "Inclusive share (function on stack): 66.4%.",
+       "Estimated self CPU time ≈ 5.83 s (samples × 1 ms period).",
+       "Defined at demo/pipeline.cpp:163.",
+       "Observed callers: gaussian_blur, sharpen, worker_loop."
+      ],
+      "id": "cpu_hotspot:a424e4ff597eeb95",
+      "impact": 0.6643835616438356,
+      "interpretation": "The instructions of this function itself account for a large share of on-CPU time. This usually indicates a hot loop, repeated work, or an algorithm whose cost grows faster than the input.",
+      "kind": "cpu_hotspot",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "self_samples",
+        "unit": "samples",
+        "value": 5820.0
+       },
+       {
+        "name": "self_share",
+        "unit": "fraction",
+        "value": 0.6643835616438356
+       },
+       {
+        "name": "inclusive_share",
+        "unit": "fraction",
+        "value": 0.6643835616438356
+       },
+       {
+        "name": "self_cpu_estimate",
+        "unit": "s",
+        "value": 5.82582582
+       }
+      ],
+      "next_actions": [
+       "Inspect the source of `convolve_row` (demo/pipeline.cpp:163) for loops and repeated work.",
+       "Check how many times it is called and with what input sizes (instrumentation mode can count calls).",
+       "Re-profile after a change and compare sessions to confirm the share drops."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "5820 of 8760 samples (66.4% ± 1.0%) were taken while executing `convolve_row` itself (self cost).",
+        "title": "Reduce algorithmic work in the hot function",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "When one function's own instructions dominate, the cost usually scales with input size inside a loop. An O(n²) pattern (e.g. a linear search inside a loop) becomes dominant quickly as n grows.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "Reduce the work done per call or the number of calls; see recommendations.",
+      "score": 66.438,
+      "severity": "high",
+      "source": "sampling",
+      "title": "CPU hotspot: convolve_row"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 5820,
+    "self_seconds_est": 5.82582582,
+    "self_share": 0.6643835616438356,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 163,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 5000,
+      "tid": 1000
+     },
+     {
+      "name": "demo-worker",
+      "samples": 820,
+      "tid": 1001
+     }
+    ],
+    "total_samples": 5820,
+    "total_seconds_est": 5.82582582,
+    "total_share": 0.6643835616438356
+   },
+   "b74ff0bddac5485f": {
+    "callees": [
+     {
+      "id": "11b7a4358b90071a",
+      "module": "demo_pipeline",
+      "name": "ImagePipeline::run",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "callers": [
+     {
+      "id": "1a3c9890daa6c14e",
+      "module": "libc.so.6",
+      "name": "__libc_start_call_main",
+      "samples": 7800,
+      "share": 0.8904109589041096
+     }
+    ],
+    "category": "other",
+    "id": "b74ff0bddac5485f",
+    "max_recursion_depth": 1,
+    "module": "demo_pipeline",
+    "name": "main",
+    "related_findings": [
+     {
+      "affected_functions": [
+       "4b1896d6dd6454c9",
+       "1a3c9890daa6c14e",
+       "b74ff0bddac5485f",
+       "11b7a4358b90071a",
+       "6be7eb241d558c7a",
+       "2494cf2038b81917"
+      ],
+      "affected_names": [
+       "_start",
+       "__libc_start_call_main",
+       "main",
+       "ImagePipeline::run",
+       "apply_filters",
+       "gaussian_blur"
+      ],
+      "confidence": "high",
+      "facts": [
+       "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+       "Below this point no single child holds ≥50.0% of samples."
+      ],
+      "id": "hot_path:2494cf2038b81917",
+      "impact": 0.5365296803652968,
+      "interpretation": "Execution time is concentrated in one call chain rather than spread out; optimizing anything off this path cannot save more than 46.3% of CPU time.",
+      "kind": "hot_path",
+      "limitations": [
+       "Sampling estimate: shares are statistical; the 95% interval is roughly ±2 standard errors.",
+       "cpu-clock sampling only observes on-CPU time; time spent blocked (I/O, locks, sleep) is invisible here.",
+       "Inlined functions are attributed to the function they were inlined into."
+      ],
+      "measurements": [
+       {
+        "name": "path_share",
+        "unit": "fraction",
+        "value": 0.5365296803652968
+       },
+       {
+        "name": "path_depth",
+        "unit": "frames",
+        "value": 6.0
+       }
+      ],
+      "next_actions": [
+       "Focus investigation on the last frames of this path.",
+       "Use the flame graph: click the path to zoom in and see how its cost splits."
+      ],
+      "recommendations": [
+       {
+        "change_to_investigate": "Look for nested loops, linear searches over growing containers and recomputation of values that do not change. Replace linear membership tests with a hash set or sorted data + binary search; hoist invariant work out of loops; consider vectorization-friendly data layouts (contiguous arrays, no aliasing).",
+        "expected_benefit": "Potentially large when the complexity class changes (e.g. O(n²) → O(n log n)); modest for constant-factor tweaks.",
+        "how_to_validate": "Re-run the same workload with the same arguments (ideally with benchmark runs) and compare the two sessions; accept the change only if the comparison reports a significant improvement. Also verify outputs are identical.",
+        "observed": "53.7% of all samples pass through this exact call path: _start → __libc_start_call_main → main → ImagePipeline::run → apply_filters → gaussian_blur.",
+        "title": "Concentrate optimization effort on the dominant path",
+        "tradeoffs": "Hash/sorted structures use more memory and may change iteration order; added code complexity.",
+        "why_it_matters": "Amdahl's law: the maximum saving from optimizing code off this path is bounded by its small share of samples.",
+        "would_disprove": "If the function's self share stays the same after reducing its input size, the cost is per-call overhead rather than algorithmic growth."
+       }
+      ],
+      "remediation": "",
+      "score": 53.653,
+      "severity": "high",
+      "source": "sampling",
+      "title": "Dominant call path ends in gaussian_blur"
+     }
+    ],
+    "resolved": true,
+    "self_samples": 0,
+    "self_seconds_est": 0.0,
+    "self_share": 0.0,
+    "source_file": "demo/pipeline.cpp",
+    "source_line": 44,
+    "threads": [
+     {
+      "name": "demo_pipeline",
+      "samples": 7800,
+      "tid": 1000
+     }
+    ],
+    "total_samples": 7800,
+    "total_seconds_est": 7.807807800000001,
+    "total_share": 0.8904109589041096
+   }
+  },
+  "functions": {
+   "functions": [
+    {
+     "callees": 0,
+     "callers": 3,
+     "id": "a424e4ff597eeb95",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "convolve_row",
+     "resolved": true,
+     "self_samples": 5820,
+     "self_seconds_est": 5.82582582,
+     "self_share": 0.6643835616438356,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 163,
+     "threads": 2,
+     "total_samples": 5820,
+     "total_seconds_est": 5.82582582,
+     "total_share": 0.6643835616438356
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "03dcc001f89fc317",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "inflate_block",
+     "resolved": true,
+     "self_samples": 700,
+     "self_seconds_est": 0.7007007000000001,
+     "self_share": 0.07990867579908675,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 112,
+     "threads": 1,
+     "total_samples": 700,
+     "total_seconds_est": 0.7007007000000001,
+     "total_share": 0.07990867579908675
+    },
+    {
+     "callees": 1,
+     "callers": 1,
+     "id": "2494cf2038b81917",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "gaussian_blur",
+     "resolved": true,
+     "self_samples": 600,
+     "self_seconds_est": 0.6006006,
+     "self_share": 0.0684931506849315,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 146,
+     "threads": 1,
+     "total_samples": 4700,
+     "total_seconds_est": 4.704704700000001,
+     "total_share": 0.5365296803652968
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "08efe270b0b67a06",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "dct_8x8",
+     "resolved": true,
+     "self_samples": 480,
+     "self_seconds_est": 0.48048048000000004,
+     "self_share": 0.0547945205479452,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 214,
+     "threads": 1,
+     "total_samples": 480,
+     "total_seconds_est": 0.48048048000000004,
+     "total_share": 0.0547945205479452
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "76dc10aab5c542bc",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "malloc",
+     "resolved": true,
+     "self_samples": 350,
+     "self_seconds_est": 0.35035035000000003,
+     "self_share": 0.03995433789954338,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 350,
+     "total_seconds_est": 0.35035035000000003,
+     "total_share": 0.03995433789954338
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "373d8afa80c0c38a",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "huffman_encode",
+     "resolved": true,
+     "self_samples": 260,
+     "self_seconds_est": 0.26026026,
+     "self_share": 0.02968036529680365,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 231,
+     "threads": 1,
+     "total_samples": 260,
+     "total_seconds_est": 0.26026026,
+     "total_share": 0.02968036529680365
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "11096c9b61b18231",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "memcpy",
+     "resolved": true,
+     "self_samples": 200,
+     "self_seconds_est": 0.20020020000000002,
+     "self_share": 0.0228310502283105,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 200,
+     "total_seconds_est": 0.20020020000000002,
+     "total_share": 0.0228310502283105
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "61a5f078ab330c66",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "pthread_mutex_lock",
+     "resolved": true,
+     "self_samples": 140,
+     "self_seconds_est": 0.14014014,
+     "self_share": 0.01598173515981735,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 140,
+     "total_seconds_est": 0.14014014,
+     "total_share": 0.01598173515981735
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "54bd7751df5581fe",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "free",
+     "resolved": true,
+     "self_samples": 120,
+     "self_seconds_est": 0.12012012000000001,
+     "self_share": 0.0136986301369863,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 120,
+     "total_seconds_est": 0.12012012000000001,
+     "total_share": 0.0136986301369863
+    },
+    {
+     "callees": 0,
+     "callers": 1,
+     "id": "21433d56a2c75abb",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "write_output",
+     "resolved": true,
+     "self_samples": 90,
+     "self_seconds_est": 0.09009009000000001,
+     "self_share": 0.010273972602739725,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 248,
+     "threads": 1,
+     "total_samples": 90,
+     "total_seconds_est": 0.09009009000000001,
+     "total_share": 0.010273972602739725
+    },
+    {
+     "callees": 4,
+     "callers": 1,
+     "id": "11b7a4358b90071a",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "ImagePipeline::run",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 61,
+     "threads": 1,
+     "total_samples": 7800,
+     "total_seconds_est": 7.807807800000001,
+     "total_share": 0.8904109589041096
+    },
+    {
+     "callees": 1,
+     "callers": 1,
+     "id": "1a3c9890daa6c14e",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "__libc_start_call_main",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 7800,
+     "total_seconds_est": 7.807807800000001,
+     "total_share": 0.8904109589041096
+    },
+    {
+     "callees": 1,
+     "callers": 0,
+     "id": "4b1896d6dd6454c9",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "_start",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 10,
+     "threads": 1,
+     "total_samples": 7800,
+     "total_seconds_est": 7.807807800000001,
+     "total_share": 0.8904109589041096
+    },
+    {
+     "callees": 1,
+     "callers": 1,
+     "id": "b74ff0bddac5485f",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "main",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 44,
+     "threads": 1,
+     "total_samples": 7800,
+     "total_seconds_est": 7.807807800000001,
+     "total_share": 0.8904109589041096
+    },
+    {
+     "callees": 3,
+     "callers": 1,
+     "id": "6be7eb241d558c7a",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "apply_filters",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 129,
+     "threads": 1,
+     "total_samples": 5720,
+     "total_seconds_est": 5.725725720000001,
+     "total_share": 0.6529680365296804
+    },
+    {
+     "callees": 1,
+     "callers": 1,
+     "id": "1320e49e72c69fc4",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "load_tiles",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 78,
+     "threads": 1,
+     "total_samples": 1250,
+     "total_seconds_est": 1.2512512500000001,
+     "total_share": 0.14269406392694065
+    },
+    {
+     "callees": 2,
+     "callers": 1,
+     "id": "97f88aec7eb4d4c4",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "decode_png",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 95,
+     "threads": 1,
+     "total_samples": 1250,
+     "total_seconds_est": 1.2512512500000001,
+     "total_share": 0.14269406392694065
+    },
+    {
+     "callees": 2,
+     "callers": 1,
+     "id": "70e9ecea0738d9eb",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "worker_loop",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 350,
+     "threads": 1,
+     "total_samples": 960,
+     "total_seconds_est": 0.9609609600000001,
+     "total_share": 0.1095890410958904
+    },
+    {
+     "callees": 1,
+     "callers": 0,
+     "id": "957696d2fc3afb7d",
+     "max_recursion_depth": 1,
+     "module": "libc.so.6",
+     "name": "start_thread",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "",
+     "source_line": 0,
+     "threads": 1,
+     "total_samples": 960,
+     "total_seconds_est": 0.9609609600000001,
+     "total_share": 0.1095890410958904
+    },
+    {
+     "callees": 1,
+     "callers": 1,
+     "id": "7a95febdadd35b0d",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "sharpen",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 180,
+     "threads": 1,
+     "total_samples": 900,
+     "total_seconds_est": 0.9009009,
+     "total_share": 0.10273972602739725
+    },
+    {
+     "callees": 2,
+     "callers": 1,
+     "id": "3cb380461962ecef",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "encode_jpeg",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 197,
+     "threads": 1,
+     "total_samples": 740,
+     "total_seconds_est": 0.74074074,
+     "total_share": 0.08447488584474885
+    },
+    {
+     "callees": 2,
+     "callers": 1,
+     "id": "62f13c6218fe8e5f",
+     "max_recursion_depth": 1,
+     "module": "demo_pipeline",
+     "name": "std::vector<float>::_M_realloc_insert",
+     "resolved": true,
+     "self_samples": 0,
+     "self_seconds_est": 0.0,
+     "self_share": 0.0,
+     "source_file": "demo/pipeline.cpp",
+     "source_line": 316,
+     "threads": 1,
+     "total_samples": 550,
+     "total_seconds_est": 0.5505505500000001,
+     "total_share": 0.06278538812785388
+    }
+   ],
+   "matched": 22,
+   "total_samples": 8760,
+   "units": "samples; *_share = fraction of samples; *_seconds_est = samples x period (estimate)"
+  },
+  "modules": [
+   {
+    "name": "demo_pipeline",
+    "self_samples": 7950,
+    "self_share": 0.9075342465753424,
+    "total_samples": 8760,
+    "total_share": 1.0
+   },
+   {
+    "name": "libc.so.6",
+    "self_samples": 810,
+    "self_share": 0.09246575342465753,
+    "total_samples": 8760,
+    "total_share": 1.0
+   }
+  ],
+  "threads": [
+   {
+    "cpu_seconds_est": 7.807807800000001,
+    "name": "demo_pipeline",
+    "samples": 7800,
+    "share": 0.8904109589041096,
+    "tid": 1000
+   },
+   {
+    "cpu_seconds_est": 0.9609609600000001,
+    "name": "demo-worker",
+    "samples": 960,
+    "share": 0.1095890410958904,
+    "tid": 1001
+   }
+  ]
+ }
+}
